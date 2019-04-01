@@ -278,6 +278,18 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								// </tr>';
 								?>
 
+
+								<?php $cur_retweet = isset( $opts[$id]['embed-retweet'] ) ? $opts[$id]['embed-retweet'] : 0; ?>
+								<tr valign="top">
+								<th scope="row"><strong>Import Retweets as:</strong></th>
+								<td>
+									<select class="twitter-embed-retweet" id="twitter-embed-retweet-<?php echo $id; ?>" name="dsgnwrks_tweet_options[<?php echo $id; ?>][embed-retweet]">
+										<option value="1" <?php selected( $cur_retweet, 1 ); ?>>Embedded Tweet</option>
+										<option value="0" <?php selected( $cur_retweet, 0 ); ?>>"RT" Plain Text</option>
+									</select>
+								</td>
+								</tr>
+
 								<tr valign="top">
 								<th scope="row"><strong>Import to Post-Type:</strong></th>
 								<td>

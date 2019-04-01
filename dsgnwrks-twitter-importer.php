@@ -426,7 +426,7 @@ class DsgnWrksTwitter {
 
 		$tweet_text = '';
 
-		if ( ! empty( $tweet->retweeted_status ) ) {
+		if ( $opts['embed-retweet'] && ! empty( $tweet->retweeted_status ) ) {
 			$tweet_text = $this->get_tweet_embed( $tweet->retweeted_status->id );
 		} else {
 			$tweet_text = apply_filters( 'dw_twitter_clean_tweets', false ) ? iconv( 'UTF-8', 'ISO-8859-1//IGNORE', $tweet->text ) : $tweet->text;
