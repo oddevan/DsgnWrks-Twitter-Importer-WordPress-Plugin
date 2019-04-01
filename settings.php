@@ -268,9 +268,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								<td>
 									<select id="twitter-image" id="twitter-image-<?php echo $id; ?>" name="dsgnwrks_tweet_options[<?php echo $id; ?>][image]">
 										<option value="none" <?php selected( $cur_image, 'none' ); ?>>Do not import images</option>
-										<option value="feat-image" <?php selected( $cur_image, 'feat-image' ); ?>>Featured Image</option>
-										<option value="content" <?php selected( $cur_image, 'feat-image' ); ?>>Content</option>
-										<option value="both" <?php selected( $cur_image, 'feat-image' ); ?>>Both</option>
+										<option value="content" <?php selected( $cur_image, 'content' ); ?>>Content</option>
 									</select>
 								</td>
 								</tr>
