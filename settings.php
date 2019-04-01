@@ -267,8 +267,8 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								<th scope="row"><strong>Insert Twitter photo into:</strong></th>
 								<td>
 									<select id="twitter-image" id="twitter-image-<?php echo $id; ?>" name="dsgnwrks_tweet_options[<?php echo $id; ?>][image]">
-										<option value="none" <?php selected( $cur_image, 'none' ); ?>>Do not import images</option>
-										<option value="content" <?php selected( $cur_image, 'content' ); ?>>Content</option>
+										<option value="none" <?php selected( $curr_image, 'none' ); ?>>Do not import images</option>
+										<option value="content" <?php selected( $curr_image, 'content' ); ?>>Content</option>
 									</select>
 								</td>
 								</tr>
