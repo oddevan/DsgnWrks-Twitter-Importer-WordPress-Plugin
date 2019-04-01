@@ -424,10 +424,16 @@ class DsgnWrksTwitter {
 
 		$post_date = date( 'Y-m-d H:i:s', strtotime( $tweet->created_at ) );
 
-		$tweet_text = apply_filters( 'dw_twitter_clean_tweets', false ) ? iconv( 'UTF-8', 'ISO-8859-1//IGNORE', $tweet->text ) : $tweet->text;
+		$tweet_text = '';
 
-		// Format tweet (hashtags, links, etc)
-		$tweet_text = self::twitter_linkify( $tweet_text, $tweet );
+		if ( ! empty( $tweet->retweeted_status ) ) {
+			$tweet_text = $this->get_tweet_embed( $tweet->retweeted_status->id );
+		} else {
+			$tweet_text = apply_filters( 'dw_twitter_clean_tweets', false ) ? iconv( 'UTF-8', 'ISO-8859-1//IGNORE', $tweet->text ) : $tweet->text;
+
+			// Format tweet (hashtags, links, etc)
+			$tweet_text = self::twitter_linkify( $tweet_text, $tweet );
+		}
 
 		$post = array(
 		  'post_author' => $opts['author'],
@@ -641,6 +647,44 @@ class DsgnWrksTwitter {
 		// Set our plugin page parameter
 		$this->plugin_page = $this->plugin_page ? $this->plugin_page : add_query_arg( 'page', $this->plugin_id, admin_url( '/tools.php' ) );
 		return $this->plugin_page;
+	}
+
+	/**
+	 * Follows redirects to get the final, embeddable URL
+	 * via https://stackoverflow.com/questions/17472329/php-get-url-of-redirect-from-source-url
+	 *
+	 * @since 1.2.0
+	 * @param  string $url given URL.
+	 * @return string final URL after all redirects
+	 */
+	private function get_final_url( $url ) {
+		$ch = curl_init();
+		curl_setopt( $ch, CURLOPT_URL, $url );
+		curl_setopt( $ch, CURLOPT_HEADER, true );
+		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true ); // Must be set to true so that PHP follows any "Location:" header.
+		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+
+		curl_exec( $ch );
+		$newurl = curl_getinfo( $ch, CURLINFO_EFFECTIVE_URL ); // This is what you need, it will return you the last effective URL.
+
+		return $newurl;
+	}
+
+	/**
+	 * Get WP Embed code for a tweet
+	 *
+	 * @since 1.2.0
+	 * @param  string $twid Numeric ID of a tweet.
+	 * @return string Block editor-compatible embed code for tweet with given ID
+	 */
+	private function get_tweet_embed( $twid ) {
+		$twurl = $this->get_final_url( 'https://twitter.com/statuses/' . $twid );
+
+		return '<!-- wp:core-embed/twitter {"url":"' . $twurl . '","type":"rich","providerNameSlug":"twitter","className":""} -->
+<figure class="wp-block-embed-twitter wp-block-embed is-type-rich is-provider-twitter"><div class="wp-block-embed__wrapper">
+' . $twurl . '
+</div></figure>
+<!-- /wp:core-embed/twitter -->';
 	}
 
 }
