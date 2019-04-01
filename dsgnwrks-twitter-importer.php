@@ -501,6 +501,44 @@ class DsgnWrksTwitter {
 		if ( !empty( $tweet->in_reply_to_screen_name ) )
 			update_post_meta( $new_post_id, 'in_reply_to_screen_name', $tweet->in_reply_to_screen_name );
 
+		// Add media.
+		if ( isset( $opts['image'] ) && 'none' !== $opts['image'] && ! empty( $tweet->extended_entities->media ) ) {
+			if ( 'content' === $opts['image'] ) {
+				foreach ( $tweet->extended_entities->media as $media ) {
+					if ( 'photo' === $media->type ) {
+						$image_id = $this->sideload_media( $media->media_url_https, $new_post_id );
+
+						$tweet_text .= "\n\n" . '<!-- wp:image {"id":' . $image_id . '} -->
+<figure class="wp-block-image"><img src="' . wp_get_attachment_url( $image_id ) . '" alt="" class="wp-image-' . $image_id . '"/></figure>
+<!-- /wp:image -->';
+					} elseif ( 'video' === $media->type || 'animated_gif' === $media->type ) {
+						$video_url     = '#';
+						$video_bitrate = -1;
+						foreach ( $media->video_info->variants as $video_info ) {
+							if ( 'video/mp4' === $video_info->content_type && $video_info->bitrate > $video_bitrate ) {
+								$video_bitrate = $video_info->bitrate;
+								$video_url     = $video_info->url;
+							}
+						}
+
+						$video_id = $this->sideload_media( $video_url, $new_post_id );
+
+						$tweet_text .= "\n\n" . '<!-- wp:video {"id":' . $video_id . '} -->
+<figure class="wp-block-video"><video controls ';
+						if ( 'animated_gif' === $media->type ) {
+							$tweet_text .= 'autoplay loop ';
+						}
+						$tweet_text .= 'preload="auto" src="' . wp_get_attachment_url( $video_id ) . '"></video></figure>
+<!-- /wp:video -->';
+					}
+				}
+
+				$post['ID']           = $new_post_id;
+				$post['post_content'] = $tweet_text;
+				wp_insert_post( $post );
+			}
+		}
+
 		return '<p><strong><em>&ldquo;'. wp_trim_words( strip_tags( $tweet->text ), 10 ) .'&rdquo; </em> imported and created successfully.</strong></p>';
 	}
 
@@ -685,6 +723,47 @@ class DsgnWrksTwitter {
 ' . $twurl . '
 </div></figure>
 <!-- /wp:core-embed/twitter -->';
+	}
+
+	/**
+	 * Add media from a remote URL to the WP Media Library
+	 *
+	 * @since 1.2.0
+	 * @param  string $media_url Remote URL of media to get.
+	 * @param  int    $post_id ID of post this media will be attached to.
+	 * @return int    Attachment ID of sideloaded media
+	 */
+	private function sideload_media( $media_url, $post_id = 1 ) {
+		$tmp = download_url( $url );
+		if ( is_wp_error( $tmp ) ) {
+			// download failed, handle error
+		}
+
+		$desc       = 'Image from Twitter';
+		$file_array = array();
+
+		// Set variables for storage
+		// fix file filename for query strings
+		preg_match( '/[^\?]+\.(jpg|jpe|jpeg|gif|png|mp4|m4v)/i', $url, $matches );
+		$file_array['name']     = basename( $matches[0] );
+		$file_array['tmp_name'] = $tmp;
+
+		// If error storing temporarily, unlink
+		if ( is_wp_error( $tmp ) ) {
+			@unlink( $file_array['tmp_name'] );
+			$file_array['tmp_name'] = '';
+		}
+
+		// do the validation and storage stuff
+		$id = media_handle_sideload( $file_array, $post_id, $desc );
+
+		// If error storing permanently, unlink
+		if ( is_wp_error($id) ) {
+			@unlink( $file_array['tmp_name'] );
+			return $id;
+		}
+		
+		return $id;
 	}
 
 }
