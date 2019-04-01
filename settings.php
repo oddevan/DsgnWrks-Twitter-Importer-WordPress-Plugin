@@ -262,21 +262,18 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								</th>
 								</tr>
 
-								<?php
-								// echo '<tr valign="top">
-								// <th scope="row"><strong>Insert Twitter photo into:</strong></th>
-								// <td>
-								//     <select id="twitter-image" name="dsgnwrks_tweet_options['.$id.'][image]">';
-								//         if ( $opts[$id]['image'] == 'feat-image') $selected1 = 'selected="selected"';
-								//         echo '<option value="feat-image" '. $selected1 .'>Featured Image</option>';
-								//         if ( $opts[$id]['image'] == 'content') $selected2 = 'selected="selected"';
-								//         echo '<option value="content" '. $selected2 .'>Content</option>';
-								//         if ( $opts[$id]['image'] == 'both') $selected3 = 'selected="selected"';
-								//         echo '<option value="both" '. $selected3 .'>Both</option>';
-								//     echo '</select>
-								// </td>
-								// </tr>';
-								?>
+								<?php $curr_image = $opts[$id]['image']; ?>
+								<tr valign="top">
+								<th scope="row"><strong>Insert Twitter photo into:</strong></th>
+								<td>
+									<select id="twitter-image" id="twitter-image-<?php echo $id; ?>" name="dsgnwrks_tweet_options[<?php echo $id; ?>][image]">
+										<option value="none" <?php selected( $cur_image, 'none' ); ?>>Do not import images</option>
+										<option value="feat-image" <?php selected( $cur_image, 'feat-image' ); ?>>Featured Image</option>
+										<option value="content" <?php selected( $cur_image, 'feat-image' ); ?>>Content</option>
+										<option value="both" <?php selected( $cur_image, 'feat-image' ); ?>>Both</option>
+									</select>
+								</td>
+								</tr>
 
 								<tr valign="top">
 								<th scope="row"><strong>Import to Post-Type:</strong></th>
