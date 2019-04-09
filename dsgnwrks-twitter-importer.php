@@ -425,8 +425,10 @@ class DsgnWrksTwitter {
 		$post_date = date( 'Y-m-d H:i:s', strtotime( $tweet->created_at ) );
 
 		$tweet_text = '';
+		$is_retweet = false;
 
 		if ( $opts['embed-retweet'] && ! empty( $tweet->retweeted_status ) ) {
+			$is_retweet = true;
 			$tweet_text = $this->get_tweet_embed( $tweet->retweeted_status->id );
 		} else {
 			$tweet_text = apply_filters( 'dw_twitter_clean_tweets', false ) ? iconv( 'UTF-8', 'ISO-8859-1//IGNORE', $tweet->text ) : $tweet->text;
@@ -502,11 +504,14 @@ class DsgnWrksTwitter {
 			update_post_meta( $new_post_id, 'in_reply_to_screen_name', $tweet->in_reply_to_screen_name );
 
 		// Add media.
-		if ( isset( $opts['image'] ) && 'none' !== $opts['image'] && ! empty( $tweet->extended_entities->media ) ) {
+		if ( ! $is_retweet && isset( $opts['image'] ) && 'none' !== $opts['image'] && ! empty( $tweet->extended_entities->media ) ) {
 			if ( 'content' === $opts['image'] ) {
 				foreach ( $tweet->extended_entities->media as $media ) {
 					if ( 'photo' === $media->type ) {
-						$image_id = $this->sideload_media( $media->media_url_https, $new_post_id );
+						$image_id = media_sideload_image( $media->media_url_https, $new_post_id, 'Image from twitter', 'id' );
+						if ( is_wp_error( $image_id ) ) {
+							echo '<pre>'.print_r( $image_id, true ).'</pre>';
+						}
 
 						$tweet_text .= "\n\n" . '<!-- wp:image {"id":' . $image_id . '} -->
 <figure class="wp-block-image"><img src="' . wp_get_attachment_url( $image_id ) . '" alt="" class="wp-image-' . $image_id . '"/></figure>
@@ -522,6 +527,9 @@ class DsgnWrksTwitter {
 						}
 
 						$video_id = $this->sideload_media( $video_url, $new_post_id );
+						if ( is_wp_error( $video_id ) ) {
+							echo '<pre>'.print_r( $video_id, true ).'</pre>';
+						}
 
 						$tweet_text .= "\n\n" . '<!-- wp:video {"id":' . $video_id . '} -->
 <figure class="wp-block-video"><video controls ';
@@ -734,9 +742,10 @@ class DsgnWrksTwitter {
 	 * @return int    Attachment ID of sideloaded media
 	 */
 	private function sideload_media( $media_url, $post_id = 1 ) {
-		$tmp = download_url( $url );
+		echo "<p>Downloading $media_url</p>\n";
+		$tmp = download_url( $media_url );
 		if ( is_wp_error( $tmp ) ) {
-			// download failed, handle error
+			return $tmp;
 		}
 
 		$desc       = 'Image from Twitter';
@@ -744,7 +753,7 @@ class DsgnWrksTwitter {
 
 		// Set variables for storage
 		// fix file filename for query strings
-		preg_match( '/[^\?]+\.(jpg|jpe|jpeg|gif|png|mp4|m4v)/i', $url, $matches );
+		preg_match( '/[^\?]+\.(jpg|jpe|jpeg|gif|png|mp4|m4v)/i', $media_url, $matches );
 		$file_array['name']     = basename( $matches[0] );
 		$file_array['tmp_name'] = $tmp;
 
@@ -752,17 +761,18 @@ class DsgnWrksTwitter {
 		if ( is_wp_error( $tmp ) ) {
 			@unlink( $file_array['tmp_name'] );
 			$file_array['tmp_name'] = '';
+			return $tmp;
 		}
 
 		// do the validation and storage stuff
 		$id = media_handle_sideload( $file_array, $post_id, $desc );
 
 		// If error storing permanently, unlink
-		if ( is_wp_error($id) ) {
+		if ( is_wp_error( $id ) ) {
 			@unlink( $file_array['tmp_name'] );
 			return $id;
 		}
-		
+	
 		return $id;
 	}
 
